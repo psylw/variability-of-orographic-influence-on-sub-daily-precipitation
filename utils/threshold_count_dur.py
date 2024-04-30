@@ -65,4 +65,5 @@ df=pd.DataFrame(count_dur_point, columns=['latitude','longitude','threshold','ma
 
 df = df.loc[df.storm_id!=0]
 
-df.to_feather('../output/count_duration_threshold_px')
+df.reset_index(drop=True).to_feather('../output/count_duration_threshold_px')
+# %%
