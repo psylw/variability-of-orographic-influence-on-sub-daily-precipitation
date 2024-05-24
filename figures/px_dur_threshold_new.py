@@ -53,7 +53,7 @@ noband = noband.sel(y=month.latitude,x=month.longitude,method='nearest',drop=Tru
 
 
 df = pd.read_feather('../output/count_duration_threshold_px2')
-df['year'] = [df.start_storm[i].year for i in df.index]
+df['year'] = [df.time[i].year for i in df.index]
 
 #df['year'] = [df.time[i].year for i in df.index]
 #df=df[df.year>2020]

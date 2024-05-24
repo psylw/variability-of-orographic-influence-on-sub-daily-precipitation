@@ -15,7 +15,7 @@ gdf = gpd.read_file(shapefile_path)
 
 # open data
 storm_folder = os.path.join('..', '..','..','data',"storm_stats")
-file_storm = glob.glob(storm_folder+'//'+'*coord40')
+file_storm = glob.glob(storm_folder+'//'+'*coord40')[-15:]
 
 # open elevation
 # open mrms
@@ -33,51 +33,74 @@ noband['x'] = noband.x+360
 noband = noband.sel(y=month.latitude,x=month.longitude,method='nearest',drop=True)
 
 noband = noband.to_dataframe(name='value').reset_index()
+
+rqi_folder = '..\\..\\data\\MRMS\\RQI_2min_cat_month_CO\\'
+file_rqi = glob.glob(rqi_folder+'*.grib2')[-15:]
 #%%
 all_months=[]
-for file in file_storm:
+for file in range(len(file_storm)):
     storm_attr=[]
-    precip = pd.read_feather(file)
+    precip = pd.read_feather(file_storm[file])
+    rqi = xr.open_dataset(file_rqi[file])
     print(file)
     for storm_id in precip.storm_id:
         index = precip.loc[precip.storm_id==storm_id]
         d = {'time':index.time.values[0],'latitude':index.latitude.values[0],'longitude':index.longitude.values[0]}
+        
         m_storm = pd.DataFrame(data=d)
         mean_lat = m_storm.latitude.mean()
         mean_lon = m_storm.longitude.mean()
-
+        
         m_storm_lat_lon_tot = m_storm.groupby(['latitude','longitude']).count()
 
-        area_above = len(m_storm_lat_lon_tot)
-        time_above = (m_storm_lat_lon_tot.time*2).mean()
+        footprint = len(m_storm_lat_lon_tot)
+        mean_time_above = (m_storm_lat_lon_tot.time*2).mean()
+
+        time_group = pd.concat([m_storm.groupby('time').count(),m_storm.groupby('time').agg(list).rename(columns={'latitude':'lat_list','longitude':'lon_list'})],axis=1)
+
+        # area at start
+        start_area = time_group.iloc[0].latitude
+         # lat/lon start area
+        start_lat = np.mean(time_group.iloc[0].lat_list)
+        start_lon = np.mean(time_group.iloc[0].lon_list)
+
+        # area at end
+        end_area = time_group.iloc[-1].latitude
+         # lat/lon end area
+        end_lat = np.mean(time_group.iloc[-1].lat_list)
+        end_lon = np.mean(time_group.iloc[-1].lon_list)
+
+        # max area
+        max_area = time_group.latitude.max()
+        # lat/lon max area
+        max_area_lat = np.mean(time_group[time_group.latitude==max_area].lat_list.iloc[0])
+        max_area_lon = np.mean(time_group[time_group.latitude==max_area].lon_list.iloc[0])
+
+        # max time
+        max_time = (m_storm_lat_lon_tot.time*2).max()
+        # lat/lon max time
+        max_time_lat = m_storm_lat_lon_tot[m_storm_lat_lon_tot.time==m_storm_lat_lon_tot.time.max()].index[0][0]
+        max_time_lon = m_storm_lat_lon_tot[m_storm_lat_lon_tot.time==m_storm_lat_lon_tot.time.max()].index[0][1]
 
         mean_elev = pd.merge(m_storm, noband, on=['latitude', 'longitude'], how='left').value.mean()
 
-        point_series = gpd.GeoSeries([Point(x, y) for x, y in zip(m_storm.longitude-360,m_storm.latitude)])
+        m_storm['fill']=1
+        test = m_storm.groupby(['time','latitude','longitude']).max().to_xarray()
 
-        # Initialize a dictionary to store the counts of points intersecting with each geometry
-        intersection_counts = {}
+        try:
+            mean_rqi = rqi.where(test.fill==1).unknown.mean().values
+        except ValueError as e:
+            print("Variable is NaN. Handling NaN case...")
+            mean_rqi = np.nan
 
-        # Iterate over each geometry in the GeoDataFrame
-        for idx, geometry in gdf.geometry.iteritems():
-            # Find intersection between the geometry and the points
-            intersection = point_series.intersects(geometry)
-            
-            # Count the number of points that intersect with the geometry
-            count = intersection.sum()
-            
-            # Store the count in the dictionary with the geometry's unique identifier
-            intersection_counts[gdf.at[idx, 'TRANS_ZONE']] = count
+        storm_attr.append([m_storm.time[0], storm_id, mean_lat,mean_lon, footprint,mean_time_above,start_area,start_lat,start_lon, end_area,end_lat,end_lon, max_area,max_area_lat,max_area_lon,max_time,max_time_lat,max_time_lon,mean_elev,mean_rqi])        
 
-        # Find the geometry with the maximum count of intersecting points
-        max_intersecting_geometry_id = max(intersection_counts, key=intersection_counts.get)
+    output = pd.DataFrame(data = storm_attr,columns=['start', 'storm_id', 'mean_lat','mean_lon', 'footprint','mean_time_above','start_area','start_lat','start_lon', 'end_area','end_lat','end_lon', 'max_area','max_area_lat','max_area_lon','max_time','max_time_lat','max_time_lon','mean_elev','mean_rqi'])
 
-        points_inside = max(intersection_counts.values())/len(point_series)
-
-        storm_attr.append([m_storm.time[0], storm_id, max_intersecting_geometry_id, mean_lat,mean_lon, mean_elev, area_above,time_above,points_inside])
-
-
-    output = pd.DataFrame(data = storm_attr,columns=['start', 'storm_id', 'max_intersecting_geometry_id', 'mean_lat','mean_lon', 'mean_elev', 'area_above','time_above','points_inside'])
     all_months.append(output)
-    #output.to_feather('..//output//'+str(year)+month+'_storm_attributes')
+
+# %%
+all_months = pd.concat(all_months).reset_index()
+all_months['mean_rqi']=all_months['mean_rqi'].astype('float')
+all_months.to_feather('above30_60')
 # %%
