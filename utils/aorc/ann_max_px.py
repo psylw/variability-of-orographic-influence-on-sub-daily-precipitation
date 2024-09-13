@@ -1,0 +1,1 @@
+# get the annual max intensity for each pixel at various window intervals
