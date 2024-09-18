@@ -6,21 +6,42 @@ import rioxarray
 import rasterio
 
 #%%
-# open elevation and resample to precip grid
-precip=xr.open_dataset('../../data/aorc/larger_aorc_APCP_surface_'+str(2023)+'.nc')
-# Load the source raster (the one to be resampled)
+########################## UNCOMMENT WHAT DATASET TO USE
+#name = 'aorc'
+#name = 'nldas'
+name = 'conus'
 
+########################## UNCOMMENT WHAT DATASET TO USE
+#dataset = '../../data/aorc/larger_aorc_APCP_surface_'+str(2022)+'.nc'
+#dataset = '../../data/NLDAS/NLDAS_FORA0125_H.A'+str(2000)+'.nc'
+dataset = '../../data/conus404/wrf2d_d01_'+str(2022)+'.nc'
+##############################################################################
+precip = xr.open_dataset(dataset)
+########################## IF NLDAS UNCOMMENT
+#precip = precip.rename({'lat': 'latitude', 'lon': 'longitude'})
+##############################################################################
+
+# Load the source raster (the one to be resampled)
 source_raster = rioxarray.open_rasterio("../../../../data/elev_data/CO_SRTM1arcsec__merge.tif")
 
-# Ensure the target raster has georeferencing information
-target_raster = precip.isel(time=0).sel(longitude = slice(-109,-104),latitude = slice(37,41)).rio.write_crs("EPSG:4326")
+##############################################################################
+########################## USE FOR NLDAS AND AORC
+#target_raster = precip.isel(time=0).sel(longitude = slice(-109,-104),latitude = slice(37,41)).rio.write_crs("EPSG:4326")
+########################## IF CONUS UNCOMMENT
+target_raster = precip.isel(time=0).sel(longitude = slice(-109,-104),latitude = slice(37.1,40.9)).rio.write_crs("EPSG:4326")
+##############################################################################
 
 # Resample the source raster to the target raster's grid using bilinear interpolation
 resampled_raster = source_raster.rio.reproject_match(target_raster, resampling=rasterio.enums.Resampling.bilinear)
 
 resampled_raster=resampled_raster.isel(band=0).where(resampled_raster>0).to_dataframe(name='elevation').drop(columns=['spatial_ref']).reset_index().rename(columns={'y':'latitude','x':'longitude'})
 #%%
-precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37,41))
+##############################################################################
+########################## USE FOR NLDAS AND AORC
+#precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37,41))
+########################## IF CONUS UNCOMMENT
+precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37.1,40.9))
+##############################################################################
 
 size_sub_lat = int(len(precip.latitude)/4)
 size_sub_lon = int(len(precip.longitude)/4)
@@ -66,3 +87,4 @@ for region in df.region.unique():
     df_elev.append(sample)
 df = pd.concat(df_elev).reset_index()
 # %%
+df.to_feather('../../output/'+name+'_elev')

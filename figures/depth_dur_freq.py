@@ -6,13 +6,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 #%%
-elev = pd.read_feather('../output/elevation')
+#elev = pd.read_feather('../output/elevation')
+elev = pd.read_feather('../output/elevation_nldas')
 df_all_years = []
 for window in (1,3,12,24):
     print(window)
-    files = glob.glob('../output/duration_'+str(window)+'/*')
+    all_files = glob.glob('../output/duration_'+str(window)+'/*')
+    files_nldas = glob.glob('../output/duration_'+str(window)+'/*nldas'+'*')
+    aorc_files = [item for item in all_files if item not in files_nldas]
 
-    for file in files:
+    for file in files_nldas:
 
         df = pd.read_feather(file)
         df = pd.merge(df,elev[['latitude','longitude','elevation_category']],on=['latitude','longitude'])
@@ -37,7 +40,8 @@ df = pd.concat(df_all_years)
 
 test = df.groupby(['quant', 'region',
        'elev_cat', 'duration']).sum().reset_index()
-test['freq'] = test.events/(2023-1979)
+#test['freq'] = test.events/(2023-1979)
+test['freq'] = test.events/(2013-2002)
 test = test[test.elev_cat.isin(['High','Low'])]
 
 test = test.drop(columns=['events', 'year'])
@@ -79,7 +83,7 @@ for idx, region in enumerate(regions):
         legend=False if idx > 0 else 'full'  # Show legend only on the first subplot
     )
 
-    axes[idx].set_ylim(-1, 1)
+    #axes[idx].set_ylim(-1, 1)
     axes[idx].text(0.5, 0.9, f'Region {region}', horizontalalignment='center', 
                    verticalalignment='center', transform=axes[idx].transAxes, 
                    bbox=dict(facecolor='white', alpha=0.5))
@@ -97,3 +101,4 @@ fig.text(0.5, -.01, 'quantile of max annual', ha='center', fontsize=16)
 # Adjust layout
 plt.tight_layout()  # Adjust the layout to make space for the legend
 plt.show()
+# %%

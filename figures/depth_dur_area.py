@@ -10,9 +10,11 @@ elev = pd.read_feather('../output/elevation')
 df_all_years = []
 for window in (1,3,12,24):
     print(window)
-    files = glob.glob('../output/duration_'+str(window)+'/*')
+    all_files = glob.glob('../output/duration_'+str(window)+'/*')
+    files_nldas = glob.glob('../output/duration_'+str(window)+'/*nldas'+'*')
+    aorc_files = [item for item in all_files if item not in files_nldas]
 
-    for file in files:
+    for file in aorc_files:
 
         df = pd.read_feather(file)
         df = pd.merge(df,elev[['latitude','longitude','elevation_category']],on=['latitude','longitude'])
@@ -64,13 +66,13 @@ axes = axes.flatten()  # Flatten the axes array to iterate over
 
 
 for idx, region in enumerate(regions):
-    plot = df_result[df_result.region == region]
+    plot = test[test.region == region]
 
     sns.lineplot(
     data=plot,
-    y="difference",  # Use the new offset x values
+    y="latitude",  # Use the new offset x values
     x="quant",
-    #style="elevation_category",
+    style="elevation_category",
     hue="duration", ax=axes[idx],palette='tab10',legend=False if idx > 0 else 'full')
 
     

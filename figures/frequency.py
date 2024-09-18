@@ -12,10 +12,13 @@ q = 0.5
 all = []
 for window in (1,3,12,24):
     print(window)
-    files = glob.glob('../../output/duration_'+str(window)+'/*')
+    all_files = glob.glob('../output/duration_'+str(window)+'/*')
+    files_nldas = glob.glob('../output/duration_'+str(window)+'/*nldas'+'*')
+    aorc_files = [item for item in all_files if item not in files_nldas]
 
     df_all_years = []
-    for file in files:
+    #for file in aorc_files:
+    for file in files_nldas:
 
         df = pd.read_feather(file)
         df = df[(df.quant==q)]
@@ -30,7 +33,7 @@ for window in (1,3,12,24):
     plt.show()
 #%%
 # boxplot frequency of events above threshold, by window, hue elevation
-elev = pd.read_feather('../output/elevation')
+elev = pd.read_feather('../output/elevation_nldas')
 
 all = pd.concat(all)
 df = pd.merge(all,elev[['latitude','longitude','elevation_category']],on=['latitude','longitude'])
