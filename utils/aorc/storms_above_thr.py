@@ -3,8 +3,8 @@
 import pandas as pd
 import xarray as xr
 ########################## UNCOMMENT WHAT DATASET TO USE
-name = 'aorc'
-#name = 'nldas'
+#name = 'aorc'
+name = 'nldas'
 #name = 'conus'
 #%%
 for window in (1,3,12,24):
@@ -18,17 +18,17 @@ for window in (1,3,12,24):
     for idx,year in enumerate(range(2002,2023)):
         print(year)
         ########################## UNCOMMENT WHAT DATASET TO USE
-        dataset = '../../data/aorc/larger_aorc_APCP_surface_'+str(year)+'.nc'
-        #dataset = '../../data/NLDAS/NLDAS_FORA0125_H.A'+str(year)+'.nc'
+        #dataset = '../../data/aorc/larger_aorc_APCP_surface_'+str(year)+'.nc'
+        dataset = '../../data/NLDAS/NLDAS_FORA0125_H.A'+str(year)+'.nc'
         #dataset = '../../data/conus404/wrf2d_d01_'+str(year)+'.nc'
         ##############################################################################
         precip = xr.open_dataset(dataset)
         ########################## IF NLDAS UNCOMMENT
-        #precip = precip.rename({'lat': 'latitude', 'lon': 'longitude'})
+        precip = precip.rename({'lat': 'latitude', 'lon': 'longitude'})
         ##############################################################################
         ########################## UNCOMMENT WHAT DATASET TO USE
-        precip = precip.rename({'APCP_surface': 'accum'})
-        #precip = precip.rename({'Rainf': 'accum'})
+        #precip = precip.rename({'APCP_surface': 'accum'})
+        precip = precip.rename({'Rainf': 'accum'})
         #precip = precip.rename({'ACRAINLSM': 'accum'})
         ##############################################################################
         ########################## USE FOR NLDAS AND AORC

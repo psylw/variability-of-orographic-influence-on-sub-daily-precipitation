@@ -12,12 +12,12 @@ name = 'aorc'
 
 # %%
 for window in (1,3,12,24):
-    storms = pd.read_feather('../../output/'+name+'aorc_storms_above_thr'+'_window_'+str(window))
+    storms = pd.read_feather('../../output/'+name+'_storms_above_thr'+'_window_'+str(window))
 
     storms = storms.drop(columns='index')
     storms['year'] = storms.time.dt.year
 
-    annual_max = pd.read_feather('../../output/'+name+'ann_max_region'+'_window_'+str(window))
+    annual_max = pd.read_feather('../../output/'+name+'_ann_max_region'+'_window_'+str(window))
 
     for year in range(2002,2023):
         print(year)
@@ -101,3 +101,5 @@ for window in (1,3,12,24):
 
         df = pd.concat(inside_high)
         df.reset_index(drop=True).to_feather('../../output/duration_'+str(window)+'/'+name+'_'+str(year)+'_duration_above_'+str(window)+'hr')
+
+# %%
