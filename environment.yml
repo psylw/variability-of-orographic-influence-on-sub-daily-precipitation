@@ -1,0 +1,36 @@
+name: storm_climo
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - xarray
+  - netcdf4
+  - hdf5
+  - gdal
+  - libnetcdf
+  - curl
+  - blosc
+  - pyarrow
+  - scikit-learn
+  - jupyterlab
+  - dask
+  - esmpy
+  - cartopy
+  - tqdm
+  - requests
+  - xesmf
+  - pip
+  - seaborn
+  - rioxarray
+  - pip:
+    - python-awips
+    - wget
+    - boto3
+    - botocore
+
+

@@ -1,37 +1,51 @@
+#%%
+import pandas as pd
+import xarray as xr
+import glob
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
+#%%
+elev = pd.read_feather('../output/'+'nldas'+'_elev')
 
-region = s.groupby(['latitude','longitude']).max().reset_index()[['latitude','longitude']]
-# Create a 1D array of length 16 and reshape it to 4x4
-array_1d = region.index.values.reshape((4,4))
+#%%
+# Create a 4x4 subplot
+regions = [
+    [12, 13, 14, 15],  # Top row
+    [8, 9, 10, 11],    # Second row
+    [4, 5, 6, 7],      # Third row
+    [0, 1, 2, 3]       # Bottom row
+]
 
-# Define latitude and longitude coordinates for the grid
-latitudes = region.latitude.unique()
-longitudes = region.longitude.unique()
+# Flatten the regions list
+regions = [region for sublist in regions for region in sublist]
 
-# Create a figure and axis
-fig, ax = plt.subplots()
+fig, axes = plt.subplots(4, 4, figsize=(15*.5, 12*.5))
+axes = axes.flat
 
-# Plot the data using imshow
-cax = ax.imshow(data, cmap='viridis', origin='upper')
+for idx, region in enumerate(regions):
+    plot = elev[elev.region==region]
+    plot = plot.groupby(['latitude','longitude']).max().to_xarray()
 
-# Add value labels in the middle of each cell, with lat/lon coordinates
-for i in range(data.shape[0]):
-    for j in range(data.shape[1]):
-        #lat_lon_label = f"({latitudes[i]}, {longitudes[j]})"
-        value_label = str(data[i, j])
-        ax.text(j, i, f"{value_label}", ha='center', va='center', color='white')
+    axes[idx].contourf(plot.longitude,plot.latitude,plot.elevation.values,add_colorbar=False,cmap='terrain',vmin = elev.elevation.min(), vmax = elev.elevation.max())
 
-# Add a colorbar
-fig.colorbar(cax)
+    axes[idx].text(0.8, 0.8, f'{region}', horizontalalignment='center', 
+            verticalalignment='center', transform=axes[idx].transAxes, 
+            bbox=dict(facecolor='white', alpha=0.5))
+    axes[idx].set_xlabel('')
+    axes[idx].set_ylabel('')
+    if idx in range(4):  # Only keep x-axis labels for the first row (idx 0-3)
+        axes[idx].set_xticklabels([])
+    
+    if idx not in range(12, 16):  # Only keep x-axis labels for the last row (idx 12-15)
+        axes[idx].set_xticklabels([])
 
-# Set axis labels
-ax.set_xticks(np.arange(len(longitudes)))
-ax.set_xticklabels(longitudes)
-ax.set_yticks(np.arange(len(latitudes)))
-ax.set_yticklabels(latitudes)
-ax.set_xlabel('Longitude')
-ax.set_ylabel('Latitude')
+    if (idx % 4) !=0:  # Only keep y-axis labels for the last column (idx 3, 7, 11, 15)
+        axes[idx].set_yticklabels([])
+    
+    axes[idx].tick_params(left=False, bottom=False)
 
-# Display the plot
+plt.subplots_adjust(wspace=.0, hspace=0.0)
 plt.show()
+fig.savefig("../figures_output/region_map.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+# %%

@@ -28,7 +28,7 @@ source_raster = rioxarray.open_rasterio("../../../../data/elev_data/CO_SRTM1arcs
 ########################## USE FOR NLDAS AND AORC
 #target_raster = precip.isel(time=0).sel(longitude = slice(-109,-104),latitude = slice(37,41)).rio.write_crs("EPSG:4326")
 ########################## IF CONUS UNCOMMENT
-target_raster = precip.isel(time=0).sel(longitude = slice(-109,-104),latitude = slice(37.1,40.9)).rio.write_crs("EPSG:4326")
+target_raster = precip.isel(time=0).sel(longitude = slice(-109.04,-103.96),latitude = slice(36.98,41.02)).rio.write_crs("EPSG:4326")
 ##############################################################################
 
 # Resample the source raster to the target raster's grid using bilinear interpolation
@@ -40,7 +40,7 @@ resampled_raster=resampled_raster.isel(band=0).where(resampled_raster>0).to_data
 ########################## USE FOR NLDAS AND AORC
 #precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37,41))
 ########################## IF CONUS UNCOMMENT
-precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37.1,40.9))
+precip = precip.sel(longitude = slice(-109.04,-103.96),latitude = slice(36.98,41.02))
 ##############################################################################
 
 size_sub_lat = int(len(precip.latitude)/4)

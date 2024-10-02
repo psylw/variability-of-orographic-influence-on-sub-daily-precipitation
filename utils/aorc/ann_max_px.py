@@ -40,19 +40,21 @@ for window in (1,3,12,24):
         precip = precip.rename({'Rainf': 'accum'})
         #precip = precip.rename({'ACRAINLSM': 'accum'})
         ##############################################################################
+
         precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37,41))
 
         precip = precip.where(precip>=0)
 
-        size_sub_lat = int(len(precip.latitude)/4)
-        size_sub_lon = int(len(precip.longitude)/4)
+        precip = precip.rolling(time=window).sum()
+        precip_max = precip.max(dim='time')
 
-        ds_daily = precip.rolling(time=window).sum()
-        ds_aggregated = ds_daily.coarsen(latitude=size_sub_lat, longitude=size_sub_lon).max()
+        ann_max.append(precip_max)
 
-        ann_max.append(ds_aggregated.max(dim='time').to_dataframe().rename(columns={'accum':'year'+str(year)}))
+    ann_max = xr.concat(ann_max, dim='year')
+    #ann_max = ann_max.quantile(.9,dim='year').accum
+    #ann_max = ann_max.quantile(.5,dim='year').accum
 
-    ann_max = pd.concat(ann_max,axis=1)
-    ann_max.reset_index().to_feather('../../output/'+name+'_ann_max_region'+'_window_'+str(window))
+    ann_max.to_netcdf('../../output/'+name+'_ann_max_px_2016'+'_window_'+str(window)+'.nc')
+
 
 # %%
