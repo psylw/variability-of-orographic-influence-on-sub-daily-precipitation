@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 #%%
-elev = pd.read_feather('../output/'+'nldas'+'_elev')
+elev = pd.read_feather('../output/'+'aorc'+'_elev')
 
 #%%
 # Create a 4x4 subplot
@@ -47,5 +47,5 @@ for idx, region in enumerate(regions):
 
 plt.subplots_adjust(wspace=.0, hspace=0.0)
 plt.show()
-fig.savefig("../figures_output/region_map.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+#fig.savefig("../figures_output/region_map.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 # %%

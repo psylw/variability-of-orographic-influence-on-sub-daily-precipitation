@@ -4,25 +4,25 @@ import xarray as xr
 import numpy as np
 ########################## UNCOMMENT WHAT DATASET TO USE
 #name = 'aorc'
-name = 'nldas'
-#name = 'conus'
+#name = 'nldas'
+name = 'conus'
 #%%
 year = 2022
 ########################## UNCOMMENT WHAT DATASET TO USE
 #dataset = '../data/aorc/larger_aorc_APCP_surface_'+str(year)+'.nc'
-dataset = '../data/NLDAS/NLDAS_FORA0125_H.A'+str(year)+'.nc'
-#dataset = '../data/conus404/wrf2d_d01_'+str(year)+'.nc'
+#dataset = '../data/NLDAS/NLDAS_FORA0125_H.A'+str(year)+'.nc'
+dataset = '../data/conus404/wrf2d_d01_'+str(year)+'.nc'
 ##############################################################################
 precip = xr.open_dataset(dataset)
 
 ########################## IF NLDAS UNCOMMENT
-precip = precip.rename({'lat': 'latitude', 'lon': 'longitude'})
+#precip = precip.rename({'lat': 'latitude', 'lon': 'longitude'})
 
 ##############################################################################
 ########################## USE FOR NLDAS AND AORC
-precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37,41))
+#precip = precip.sel(longitude = slice(-109,-104),latitude = slice(37,41))
 ########################## IF CONUS UNCOMMENT
-#precip = precip.sel(longitude = slice(-109.04,-103.96),latitude = slice(36.98,41.02))
+precip = precip.sel(longitude = slice(-109.04,-103.96),latitude = slice(36.98,41.02))
 #############################################################################
 #%%
 df = precip.isel(time=0).to_dataframe()
@@ -59,3 +59,4 @@ for region in range(16):
 
 df = pd.DataFrame(region_area)
 df.to_feather('../output/cell_area'+name)
+# %%

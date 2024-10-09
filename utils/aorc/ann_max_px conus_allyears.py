@@ -23,7 +23,7 @@ for window in (1,3,12,24):
 
         precip = precip.where(precip>=0)
 
-        precip = precip.rolling(time=window).sum()
+        precip = precip.rolling(time=window).sum()*(1/window)
         precip_max = precip.max(dim='time')
 
         ann_max.append(precip_max)
@@ -34,3 +34,5 @@ for window in (1,3,12,24):
 
     ann_max.to_netcdf('../../output/'+name+'_ann_max_px_allyears'+'_window_'+str(window)+'.nc')
 
+
+# %%
