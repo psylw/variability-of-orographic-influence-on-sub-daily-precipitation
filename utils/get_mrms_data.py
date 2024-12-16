@@ -1,101 +1,41 @@
-# %%
-from datetime import datetime, time
+#%%
 import os
-import urllib.request
-from urllib.request import HTTPError
-from datetime import timedelta
+import requests
+from datetime import datetime, timedelta
 
-# source for code: https://github.com/HydrologicEngineeringCenter/data-retrieval-scripts/blob/master/retrieve_qpe_gagecorr_01h.py
-# 
-# https://www.hec.usace.army.mil/confluence/hmsdocs/hmsguides/working-with-gridded-boundary-condition-data/downloading-multi-radar-multi-sensor-mrms-precipitation-data
-# 
-
-# 
-# Unzip files after download
-
-# change dates and sample interval
-
-start = datetime(2023, 6, 1, 1, 0)
-end = datetime(2023, 6, 30, 23, 58)
-minute = timedelta(minutes=2)
-#minute = timedelta(hours=1)
-# only download certain months
-mo1 = 6
-mo2 = 6
-
-# indicate which product to download (rate,RQI,QPE_multi,QPE_radar)
-product = 'RQI'
-
-# tell program where to download files ==> /data/raw
-# Create a path to the code file
-codeDir = os.path.dirname(os.path.abspath(os.getcwd()))
-# Create a path to the data folder
-# destination = os.path.join(codeDir,"data","processed")
-destination = 'Z:\\working code\\MRMS-eval-with-gages-in-CO\\temp'
-# Change to data folder
-os.chdir(destination)
-
-missing_dates = []
-fallback_to_radaronly = True #Enables a post-processing step that will go through the list of missing dates for gage-corrected
-############################# and tries to go get the radar-only values if they exist.
-
-date = start
-
-while date <= end:
-    if date.month>=mo1 and date.month<=mo2:
-        if product == 'rate':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/PrecipRate/PrecipRate_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(
-            date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        
-        elif product == 'RQI':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/RadarQualityIndex/RadarQualityIndex_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        elif product == 'QPE_multi':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/MultiSensor_QPE_01H_Pass2/MultiSensor_QPE_01H_Pass2_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        elif product == 'QPE_multi':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/RadarOnly_QPE_01H/RadarOnly_QPE_01H_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        
-        filename = url.split("/")[-1]
-        try:
-            fetched_request = urllib.request.urlopen(url)
-        except HTTPError as e:
-            missing_dates.append(date)
+# Function to download a file
+def download_file(url, save_path):
+    try:
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            with open(save_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=1024):
+                    f.write(chunk)
+            print(f"Downloaded: {save_path}")
         else:
-            with open(destination + os.sep + filename, 'wb') as f:
-                f.write(fetched_request.read())
-        finally:
-            date += minute
-    else:
-        date += minute
+            print(f"Failed to download: {url} - Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error downloading {url}: {e}")
 
-if fallback_to_radaronly:
-    radar_also_missing = []
-    for date in missing_dates:
-        if product == 'rate':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/PrecipRate/PrecipRate_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(
-            date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        
-        elif product == 'RQI':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/RadarQualityIndex/RadarQualityIndex_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        elif product == 'QPE_multi':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/MultiSensor_QPE_01H_Pass2/MultiSensor_QPE_01H_Pass2_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        elif product == 'QPE_multi':
-            url = "http://mtarchive.geol.iastate.edu/{:04d}/{:02d}/{:02d}/mrms/ncep/RadarOnly_QPE_01H/RadarOnly_QPE_01H_00.00_{:04d}{:02d}{:02d}-{:02d}{:02d}00.grib2.gz".format(date.year, date.month, date.day, date.year, date.month, date.day, date.hour,date.minute)
-        
-        
-        filename = url.split("/")[-1]
-        try:
-            fetched_request = urllib.request.urlopen(url)
-        except HTTPError as e:
-            radar_also_missing.append(date)
-        else:
-            with open(destination + os.sep + filename, 'wb') as f:
-                f.write(fetched_request.read())
-
-print(radar_also_missing)
-
-
-
-
-
-
-# %%
+# Define the years and months for JJA
+years = range(2016, 2023)  # 2016 to 2022 inclusive
+months = ['06', '07', '08']
+SAVE_DIR = '../data/MRMS'
+# Loop through each year, month, and day
+for year in years:
+    for month in months:
+        # Determine the number of days in the month
+        num_days = 30 if month in ['06'] else 31
+        for day in range(1, num_days + 1):
+            date_str = f"{year}{month}{day:02d}"
+            base_url = f"https://mtarchive.geol.iastate.edu/{year}/{month}/{day:02d}/mrms/ncep/RadarOnly_QPE_01H/"
+            
+            for hour in range(24):
+                hour_str = f"{hour:02d}0000"
+                filename = f"RadarOnly_QPE_01H_00.00_{date_str}-{hour_str}.grib2.gz"
+                file_url = f"{base_url}{filename}"
+                save_path = os.path.join(SAVE_DIR,filename)
+                
+                # Download the file
+                download_file(file_url, save_path)

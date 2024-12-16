@@ -10,118 +10,98 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import gridspec
 #%%
+df_mrms = pd.read_feather('../output/mrms_ann_max').drop(columns=['step','heightAboveSea'])
+df_mrms = df_mrms.groupby(['latitude','longitude']).quantile(.5).reset_index()
+df_mrms['dataset'] = 'mrms'
+df_aorc = pd.read_feather('../output/aorc_ann_max')
+df_aorc = df_aorc.groupby(['latitude','longitude']).quantile(.5).reset_index()
+df_aorc['dataset'] = 'aorc'
+
+df_conus = pd.read_feather('../output/conus_ann_max')
+df_conus = df_conus[(df_conus.season=='JJA')&(df_conus.year>=2016)].drop(columns='season')
+df_conus = df_conus.groupby(['latitude','longitude']).quantile(.5).reset_index()
+df_conus['dataset'] = 'conus'
+df = pd.concat([df_mrms,df_aorc,df_conus])
+
+df_elev = pd.read_feather('../output/conus_elev')
+
+df = pd.merge(df,df_elev,on=['latitude','longitude'])
+#%%
+#%%
 xarray_list = []
+for dataset in ['conus','mrms','aorc']:
+    xarray_list.append(df[df.dataset==dataset][['latitude','longitude','accum_1hr']].groupby(['latitude','longitude']).median().accum_1hr.to_xarray())
 
-for window in (1,3,12,24):
-    
-    df_aorc = xr.open_dataset('../output/'+'aorc'+'_ann_max_px_2016'+'_window_'+str(window)+'.nc').median(dim='year')
-
-    df_nldas = xr.open_dataset('../output/'+'nldas'+'_ann_max_px_2016'+'_window_'+str(window)+'.nc').median(dim='year')
-    
-    df_conus = xr.open_dataset('../output/'+'conus'+'_ann_max_px_2016'+'_window_'+str(window)+'.nc').median(dim='year')
-
-    #df_mrms = xr.open_dataset('../output/'+'mrms_nldas'+'_ann_max_px_2016'+'_window_'+str(window)+'.nc').median(dim='year').drop_vars(['step','heightAboveSea'])
-
-    combined = xr.concat([df_conus, df_aorc, df_nldas], dim='ensemble')
-
-    std_dev = combined.std(dim='ensemble')
-
-    xarray_list.append(df_aorc)
-    xarray_list.append(df_nldas)
-    xarray_list.append(df_conus)
-    #xarray_list.append(df_mrms)
-    xarray_list.append(std_dev)
+for dataset in ['conus','mrms','aorc']:
+    xarray_list.append(df[df.dataset==dataset][['latitude','longitude','accum_24hr']].groupby(['latitude','longitude']).median().accum_24hr.to_xarray())
 
 
-#%%
-elev = pd.read_feather('../output/'+'nldas'+'_elev')
-elev = elev.groupby(['latitude','longitude']).max().elevation.to_xarray()
-#%%
 # Create a 4x4 subplot
-
+#%%
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from matplotlib.gridspec import GridSpec
-# Adjust the figure to make room for colorbars in the last two columns
-fig, axes = plt.subplots(4, 4, figsize=(15 * 0.5, 15 * 0.5), sharex=True, sharey=True)
+from matplotlib.colors import ListedColormap, BoundaryNorm
+import matplotlib.colors as mcolors
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+import xarray as xr
+from matplotlib.patches import Rectangle
+# Define the color palette
+colors = [
+    "#ffffd9", "#edf8b1", "#c7e9b4", "#7fcdbb",
+    "#41b6c4", "#1d91c0", "#225ea8", "#253494", "#081d58"
+]
 
+# Create the custom colormap
+custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_gradient", colors, N=256)
 
+# Create subplots
+fig, axes = plt.subplots(2, 3, figsize=(14 * 0.7, 8 * 0.6), sharex=True, sharey=True)
+elev = pd.read_feather('../output/'+'conus'+'_elev')
+elev = elev.groupby(['latitude', 'longitude']).max().elevation.to_xarray()
+shapefiles = {}
+for shape in [10, 11, 13, 14]:
+    shapefile_path = f"../data/huc2/WBD_{shape}_HU2_Shape/WBDHU2.shp"
+    shapefiles[shape] = gpd.read_file(shapefile_path)
 
-row_labels = ['1-hr', '3-hr', '12-hr', '24-hr']
-
-vmax = [20, 20, 20,  10,
-        25/3, 25/3, 25/3,  10/3,
-
-        30/12, 30/12, 30/12,  10/12,
-        35/24, 35/24, 35/24,  10/24]
-vmin = [3, 3, 3,  0,
-        4/3, 4/3, 4/3,  0,
-        5/12, 5/12, 5/12,  0,
-        6/24, 6/24, 6/24,  0]
-title1 = 'med int, mm/hr'
-title2 = 'std dev, mm/hr'
-# Loop through each xarray and corresponding subplot
 for i, ax in enumerate(axes.flat):
-    ax.contour(elev.longitude, elev.latitude, elev.values, levels=5, alpha=0.5, colors='white')
-    # Plot each xarray in a subplot
-    # Replace 'your_variable' with the variable you want to plot
-    im = xarray_list[i].accum.plot(ax=ax, vmin=vmin[i], vmax=vmax[i], add_colorbar=False, edgecolor=None, rasterized=True)
-    if (i % 4) == 2 and (i // 4) == 0:
-            cbar_ax_4th = fig.add_axes([.99, 0.76, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title1)
-    if (i % 4) == 3 and (i // 4) == 0:
-            cbar_ax_4th = fig.add_axes([1.07, 0.76, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title2)
-    if (i % 4) == 2 and (i // 4) == 1:
-            cbar_ax_4th = fig.add_axes([.99, 0.76-.24, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title1)
-    if (i % 4) == 3 and (i // 4) == 1:
-            cbar_ax_4th = fig.add_axes([1.07, 0.76-.24, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title2)
-    if (i % 4) == 2 and (i // 4) == 2:
-            cbar_ax_4th = fig.add_axes([.99, 0.76-.24*2, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title1)
-    if (i % 4) == 3 and (i // 4) == 2:
-            cbar_ax_4th = fig.add_axes([1.07, 0.76-.24*2, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title2)
-    if (i % 4) == 2 and (i // 4) == 3:
-            cbar_ax_4th = fig.add_axes([.99, 0.77-.24*3, 0.01, 0.19])  # Adjust the position as needed
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title1)
-    if (i % 4) == 3 and (i // 4) == 3:
-            cbar_ax_4th = fig.add_axes([1.07, 0.77-.24*3, 0.01, 0.19])  # Adjust the position as needed
-            
-            cbar = fig.colorbar(im, cax=cbar_ax_4th)
-            cbar.set_label(title2)
-    # Optional: Add a title to each subplot
-    if i == 0:
-        ax.set_title('AORC')
-    if i == 1:
-        ax.set_title('NLDAS-2')
-    if i == 2:
-        ax.set_title('CONUS404')
-    if i == 3:
-        ax.set_title('Std Dev')
+    data = xarray_list[i]
+    data = data.where(data > 0.25)
+    # Plot shapefiles
 
+    # Plot precipitation data with different vmax for each row
+    if i < 3:
+        im = ax.pcolormesh(data.longitude, data.latitude, data.values, vmin=0, vmax=20, cmap=custom_cmap, rasterized=True)
+    else:
+        im = ax.pcolormesh(data.longitude, data.latitude, data.values, vmin=0, vmax=40, cmap=custom_cmap, rasterized=True)
+    for gdf in shapefiles.values():
+        gdf.plot(ax=ax, edgecolor='white', facecolor='none',linewidth=.5)
+    ax.set_aspect('equal')
+    ax.set_xlim(elev.longitude.min(), elev.longitude.max())
+    ax.set_ylim(elev.latitude.min(), elev.latitude.max())
 
-    ax.set_xlabel('')
-    ax.set_ylabel('')
+# Add row and column labels
+row_labels = ['1-hr', '24-hr']
+for row in range(2):
+    fig.text(0, 0.75 - row * 0.47, row_labels[row], va='center', ha='center', rotation='vertical', fontsize=14)
 
-# Add row labels
-for row in range(4):
-    fig.text(-0.01, 0.85 - row * 0.24, row_labels[row], va='center', ha='center', rotation='vertical', fontsize=12)
+col_labels = ['CONUS404', 'MRMS', 'AORC']
+for col in range(3):
+    fig.text(0.18 + col * 0.28, 1.0, col_labels[col], va='center', ha='center', rotation='horizontal', fontsize=12)
 
-# Adjust layout to avoid overlapping plots
-plt.tight_layout()  # Adjust right spacing to make room for the last column
-
-# Show the plot
+# Add a colorbar for each row
+for row in range(2):
+    cbar_ax = fig.add_axes([0.9, 0.6 - row * 0.47, 0.015, 0.35])  # Positioning for colorbar
+    vmax = 20 if row == 0 else 40
+    cbar = fig.colorbar(plt.cm.ScalarMappable(cmap=custom_cmap, norm=mcolors.Normalize(vmin=0, vmax=vmax)),
+                        cax=cbar_ax)
+    if row==0:                    
+        cbar.set_label('1hr accum, mm', fontsize=10)
+    else:
+        cbar.set_label('24hr accum, mm', fontsize=10)
+plt.tight_layout(rect=[0, 0, 0.9, 1])  # Adjust layout to make room for colorbars
 plt.show()
+fig.savefig("../figures_output/med_annmax.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 
-fig.savefig("../figures_output/map_ann_max.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+
 # %%
