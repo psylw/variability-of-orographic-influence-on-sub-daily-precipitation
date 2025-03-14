@@ -8,7 +8,7 @@ import os
 import numpy as np
 import xesmf as xe
 #%%
-precip=xr.open_dataset('../data/aorc/larger_aorc_APCP_surface_'+str(2023)+'.nc')
+precip=xr.open_dataset('../data/aorc/larger_aorc_APCP_surface_'+str(2022)+'.nc')
 lat_min = int(precip.latitude.min().values)
 lat_max = int(precip.latitude.max().values)+.5
 lon_left = int(precip.longitude.min().values)-.5
@@ -26,13 +26,14 @@ ds_out = xr.Dataset(
 )
 
 # make regridder to apply to all 
-url = 'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d559000/wy1995/199508/wrf2d_d01_1995-08-01_01:00:00.nc?Time[0:1:0],XLAT[0:1:1014][0:1:1366],XLONG[0:1:1014][0:1:1366],ACRAINLSM[0:1:0][0:1:1014][0:1:1366]'
-
+#url = 'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d559000/wy1995/199508/wrf2d_d01_1995-08-01_01:00:00.nc?Time[0:1:0],XLAT[0:1:1014][0:1:1366],XLONG[0:1:1014][0:1:1366],ACRAINLSM[0:1:0][0:1:1014][0:1:1366]'
+url = 'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d559000/wy1995/199508/wrf2d_d01_1995-08-01_01:00:00.nc?Time[0:1:0],XLAT[0:1:1014][0:1:1366],XLONG[0:1:1014][0:1:1366],PREC_ACC_NC[0:1:0][0:1:1014][0:1:1366]'
 ds = xr.open_dataset(url)
 
 regridder = xe.Regridder(ds, ds_out, "bilinear")
 
-output_dir = '../data/conus404/'
+#output_dir = '../data/conus404/'
+output_dir = '../data/conus404/PREC_ACC_NC/'
 
 max_retries = 5
 retry_delay = 10
@@ -41,9 +42,10 @@ base_url = "https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d559000/"
 months_30days = ["04", "06", "09", "11"]
 months_31days = ["01", "03", "05", "07", "08", "10", "12"]
 february = "02"
-years = range(2016, 2023)  
+years = range(2021, 2023)  
 hours = [f"{hour:02d}" for hour in range(24)]  # Generates hours 00 to 23
-template_url = "wy{water_year}/{calendar_year}{month}/wrf2d_d01_{calendar_year}-{month}-{day}_{hour}:00:00.nc?Time[0:1:0],XLAT[0:1:1014][0:1:1366],XLONG[0:1:1014][0:1:1366],ACRAINLSM[0:1:0][0:1:1014][0:1:1366]"
+#template_url = "wy{water_year}/{calendar_year}{month}/wrf2d_d01_{calendar_year}-{month}-{day}_{hour}:00:00.nc?Time[0:1:0],XLAT[0:1:1014][0:1:1366],XLONG[0:1:1014][0:1:1366],ACRAINLSM[0:1:0][0:1:1014][0:1:1366]"
+template_url = "wy{water_year}/{calendar_year}{month}/wrf2d_d01_{calendar_year}-{month}-{day}_{hour}:00:00.nc?Time[0:1:0],XLAT[0:1:1014][0:1:1366],XLONG[0:1:1014][0:1:1366],PREC_ACC_NC[0:1:0][0:1:1014][0:1:1366]"
 
 for water_year in years:
     file_list = []
@@ -94,8 +96,9 @@ for water_year in years:
 
                 ds = ds.rename({'Time': 'time'})
 
-                ds_selected = ds.ACRAINLSM
-                
+                #ds_selected = ds.ACRAINLSM
+                ds_selected = ds.PREC_ACC_NC
+
                 parsed_url = urlparse(url)
                 filename = parsed_url.path.split('/')[-1].split('.')[0][0:-6]+'_CO.nc'
                 ds_selected.to_netcdf(output_dir+filename)

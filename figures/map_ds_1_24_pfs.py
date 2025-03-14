@@ -10,7 +10,7 @@ from scipy.stats import gaussian_kde
 #%%
 df_atlas = pd.read_feather('../output/atlas_14')
 df_reps = pd.read_feather('../output/reps').drop(columns=['band_x', 'spatial_ref_x', 'band_y', 'spatial_ref_y'])
-df_conus = pd.read_feather('../output/conus_ann_max').groupby(['latitude','longitude','year']).max().drop(columns='season').groupby(['latitude','longitude']).quantile(.9).reset_index()
+df_conus = pd.read_feather('../output/conus_new_ann_max').groupby(['latitude','longitude','year']).max().drop(columns='season').groupby(['latitude','longitude']).quantile(.9).reset_index()
 df_conus['dataset'] = 'conus'
 df = pd.concat([df_atlas,df_reps,df_conus])
 
@@ -60,47 +60,53 @@ import numpy as np
 import xarray as xr
 
 cmap = plt.get_cmap('viridis')
-boundaries = np.arange(.25,1.125,.125)  # Boundaries for color changes
+boundaries = np.arange(0,1.125,.125)  # Boundaries for color changes
 norm = BoundaryNorm(boundaries, cmap.N)
 
-# Load elevation data
-elev = pd.read_feather('../output/'+'conus'+'_elev')
-elev = elev.groupby(['latitude', 'longitude']).max().elevation.to_xarray()
 
 # Load shapefiles once
 shapefiles = {}
 for shape in [10, 11, 13, 14]:
     shapefile_path = f"../data/huc2/WBD_{shape}_HU2_Shape/WBDHU2.shp"
     shapefiles[shape] = gpd.read_file(shapefile_path)
-
-upperSP = gpd.read_file('../data/upperSP/layers/globalwatershed.shp')
+gdf2 = gpd.read_file("../data/Colorado_Mtn_Ranges/ranges.shp")
+#upperSP = gpd.read_file('../data/upperSP/layers/globalwatershed.shp')
 # Create subplots
 fig, axes = plt.subplots(2, 3, figsize=(15*.7, 8*.6), sharex=True, sharey=True)
 
 for i, ax in enumerate(axes.flat):
     data = xarray_list[i]
-    data = data.where(data > 0.25)
+    data = data.where(data > 0)
+
+    ax.text(-104.4, 39.6, "10", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-104.7, 37.1, "11", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-106, 37.4, "13", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-108.6, 40.5, "14", 
+            fontsize=14, color='white', ha='center')
 
     # Plot elevation data
-    ax.contourf(elev.longitude, elev.latitude, elev, cmap='terrain', alpha=0.7)
+    #ax.contourf(elev.longitude, elev.latitude, elev, cmap='terrain', alpha=0.7)
     
     # Plot precipitation data
     im = ax.pcolormesh(data.longitude, data.latitude, data.values, cmap=cmap, norm=norm, rasterized=True)
-
+    gdf2.plot(ax=ax, edgecolor='white', facecolor='none',linewidth=.75,linestyle='--')
     
     # Plot shapefiles
     for gdf in shapefiles.values():
         gdf.plot(ax=ax, edgecolor='red', facecolor='none')
-    upperSP.plot(ax=ax, edgecolor='lightblue', facecolor='none',linewidth=1,linestyle='--')
+    #upperSP.plot(ax=ax, edgecolor='lightblue', facecolor='none',linewidth=1,linestyle='--')
     
     # Set aspect ratio and limits
     ax.set_aspect('equal')
-    ax.set_xlim(elev.longitude.min(), elev.longitude.max())
-    ax.set_ylim(elev.latitude.min(), elev.latitude.max())
+    ax.set_xlim(data.longitude.min(), data.longitude.max())
+    ax.set_ylim(data.latitude.min(), data.latitude.max())
 
-    if i>2:
-        snotel = pd.read_csv('../data/snotel_loc.csv')
-        ax.scatter(snotel.Longitude,snotel.Latitude, facecolor='none',edgecolors='white',linewidth=1, s=20)
+    #if i>2:
+    #    snotel = pd.read_csv('../data/snotel_loc.csv')
+    #    ax.scatter(snotel.Longitude,snotel.Latitude, facecolor='none',edgecolors='white',linewidth=1, s=20)
 
 # Add row and column labels
 row_labels = ['1-hr', '24-hr']
@@ -120,3 +126,5 @@ plt.tight_layout()
 #plt.subplots_adjust(top=0.9)  # Adjust top margin to fit labels
 plt.show()
 fig.savefig("../figures_output/pfsnormaccummap.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+
+# %%

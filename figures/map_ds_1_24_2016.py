@@ -42,7 +42,7 @@ df_aorc = pd.read_feather('../output/aorc_ann_max')
 df_aorc = df_aorc.groupby(['latitude','longitude']).median().reset_index()
 df_aorc['dataset'] = 'aorc'
 
-df_conus = pd.read_feather('../output/conus_ann_max')
+df_conus = pd.read_feather('../output/conus_new_ann_max')
 df_conus = df_conus[(df_conus.season=='JJA')&(df_conus.year>=2016)].drop(columns='season')
 df_conus = df_conus.groupby(['latitude','longitude']).median().reset_index()
 df_conus['dataset'] = 'conus'
@@ -93,13 +93,11 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 
-cmap = plt.get_cmap('viridis')
-boundaries = np.arange(.25,1.125,.125)  # Boundaries for color changes
-norm = BoundaryNorm(boundaries, cmap.N)
+plot_thr = 0
 
-# Load elevation data
-elev = pd.read_feather('../output/'+'conus'+'_elev')
-elev = elev.groupby(['latitude', 'longitude']).max().elevation.to_xarray()
+cmap = plt.get_cmap('viridis')
+boundaries = np.arange(plot_thr,1.125,.125)  # Boundaries for color changes
+norm = BoundaryNorm(boundaries, cmap.N)
 
 # Load shapefiles once
 shapefiles = {}
@@ -107,36 +105,48 @@ for shape in [10, 11, 13, 14]:
     shapefile_path = f"../data/huc2/WBD_{shape}_HU2_Shape/WBDHU2.shp"
     shapefiles[shape] = gpd.read_file(shapefile_path)
 
+gdf2 = gpd.read_file("../data/Colorado_Mtn_Ranges/ranges.shp")
+
+
 # Create subplots
 fig, axes = plt.subplots(2, 3, figsize=(15*.7, 8*.6), sharex=True, sharey=True)
 
 for i, ax in enumerate(axes.flat):
     data = xarray_list[i]
-    data = data.where(data > 0.25)
+    data = data.where(data > plot_thr)
 
-    # Plot elevation data
-    ax.contourf(elev.longitude, elev.latitude, elev, cmap='terrain', alpha=0.7)
+    ax.text(-104.4, 39.6, "10", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-104.7, 37.1, "11", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-106, 37.4, "13", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-108.6, 40.5, "14", 
+            fontsize=14, color='white', ha='center')
     
-    # Plot precipitation data
     im = ax.pcolormesh(data.longitude, data.latitude, data.values, cmap=cmap, norm=norm, rasterized=True)
-
     # Plot shapefiles
+
+    gdf2.plot(ax=ax, edgecolor='white', facecolor='none',linewidth=.75,linestyle='--')
+
     for gdf in shapefiles.values():
         gdf.plot(ax=ax, edgecolor='red', facecolor='none')
 
     # Set aspect ratio and limits
     ax.set_aspect('equal')
-    ax.set_xlim(elev.longitude.min(), elev.longitude.max())
-    ax.set_ylim(elev.latitude.min(), elev.latitude.max())
+    ax.set_xlim(data.longitude.min(), data.longitude.max())
+    ax.set_ylim(data.latitude.min(), data.latitude.max())
 
     if i<3:
-        scatter=ax.scatter(coag1[coag1.norm>.25].longitude,coag1[coag1.norm>.25].latitude,c=coag1[coag1.norm>.25].norm,cmap=cmap,norm=norm, edgecolor='white',s=25)
+        scatter=ax.scatter(coag1.longitude,coag1.latitude,c=coag1.norm,cmap=cmap,norm=norm, edgecolor='white',s=25)
+        #scatter=ax.scatter(coag1[coag1.norm>plot_thr].longitude,coag1[coag1.norm>plot_thr].latitude,c=coag1[coag1.norm>plot_thr].norm,cmap=cmap,norm=norm, edgecolor='white',s=25)
 
-        scatter=ax.scatter(coag1[coag1.norm<=.25].longitude,coag1[coag1.norm<=.25].latitude,color='#E52B50', marker='x',s=25)
+        #scatter=ax.scatter(coag1[coag1.norm<=plot_thr].longitude,coag1[coag1.norm<=plot_thr].latitude,color='#E52B50', marker='x',s=25)
     else:
-        scatter=ax.scatter(coag24[coag24.norm>.25].longitude,coag24[coag24.norm>.25].latitude,c=coag24[coag24.norm>.25].norm,cmap=cmap,norm=norm, edgecolor='white',s=25)
+        scatter=ax.scatter(coag24.longitude,coag24.latitude,c=coag24.norm,cmap=cmap,norm=norm, edgecolor='white',s=25)
+        #scatter=ax.scatter(coag24[coag24.norm>plot_thr].longitude,coag24[coag24.norm>plot_thr].latitude,c=coag24[coag24.norm>plot_thr].norm,cmap=cmap,norm=norm, edgecolor='white',s=25)
 
-        scatter=ax.scatter(coag24[coag24.norm<=.25].longitude,coag24[coag24.norm<=.25].latitude,color='#E52B50', marker='x',s=25)
+        #scatter=ax.scatter(coag24[coag24.norm<=plot_thr].longitude,coag24[coag24.norm<=plot_thr].latitude,color='#E52B50', marker='x',s=25)
 
     #snotel = pd.read_csv('../data/snotel_loc.csv')
     #ax.scatter(snotel.Longitude,snotel.Latitude,c='white')

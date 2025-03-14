@@ -2,14 +2,18 @@
 import xarray as xr
 import os
 import glob
-
+#%%
 # Directory containing your NetCDF files
-input_dir = "../data/conus404"
-output_dir = "../data/conus404/seasonal"
+#input_dir = "../data/conus404"
+#output_dir = "../data/conus404/seasonal"
+
+input_dir = "../data/conus404/PREC_ACC_NC"
+output_dir = "../data/conus404/PREC_ACC_NC_season"
 os.makedirs(output_dir, exist_ok=True)
 
 # Define years and seasonal months
-years = range(2016, 2022)
+#years = range(2016, 2022)
+years = range(2019, 2023)
 seasons = {
     "DJF": [("12", -1), ("01", 0), ("02", 0)],  # December (previous year), January, February
     "MAM": [("03", 0), ("04", 0), ("05", 0)],  # March, April, May

@@ -29,14 +29,14 @@ coag24 = pd.merge(coag24,huc,on=['latitude','longitude'])
 #%%
 aorc1 = pd.read_feather('../output/aorc_atgage')
 aorc1 = aorc1[aorc1.accum_1hr>=.13][['time', 'latitude', 'longitude', 'accum_1hr']]
-conus1 = pd.read_feather('../output/conus_atgage')
+conus1 = pd.read_feather('../output/conus_new_atgage')
 conus1 = conus1[conus1.accum_1hr>=.13][['time', 'latitude', 'longitude', 'accum_1hr']]
 mrms1 = pd.read_feather('../output/mrms_atgage')
 mrms1 = mrms1[mrms1.accum_1hr>=.13][['time', 'latitude', 'longitude', 'accum_1hr']]
 
 aorc24 = pd.read_feather('../output/aorc_atgage')
 aorc24 = aorc24[aorc24.accum_24hr>=.13][['time', 'latitude', 'longitude', 'accum_24hr']]
-conus24 = pd.read_feather('../output/conus_atgage')
+conus24 = pd.read_feather('../output/conus_new_atgage')
 conus24 = conus24[conus24.accum_24hr>=.13][['time', 'latitude', 'longitude', 'accum_24hr']]
 mrms24 = pd.read_feather('../output/mrms_atgage')
 mrms24 = mrms24[mrms24.accum_24hr>=.13][['time', 'latitude', 'longitude', 'accum_24hr']]

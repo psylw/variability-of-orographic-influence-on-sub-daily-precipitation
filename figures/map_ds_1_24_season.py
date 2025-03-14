@@ -8,8 +8,11 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 #%%
-df = pd.read_feather('../output/conus_ann_max')
-df = df.groupby(['latitude','longitude','season']).quantile(.9).reset_index()
+#df = pd.read_feather('../output/conus_ann_max')
+
+df = pd.read_feather('../output/conus_new_ann_max')
+
+df = df.groupby(['latitude','longitude','season']).quantile(.5).reset_index()
 
 df_elev = pd.read_feather('../output/conus_elev')
 df = pd.merge(df,df_elev,on=['latitude','longitude'])
@@ -36,7 +39,14 @@ df2 = pd.merge(df2,df_min,on=['huc2','season'])
 
 df2['norm_2'] = (df2[window]-df2.n_min)/(df2.n_max-df2.n_min)
 
-
+#%%
+for h in [10,11,13,14]:
+    plot = df1[df1.huc2==h]
+    sns.kdeplot(data=plot,x='norm_1',hue='season')
+    plot = df2[df2.huc2==h]
+    sns.kdeplot(data=plot,x='norm_2',hue='season',linestyle='--')
+    plt.title(h)
+    plt.show()
 #%%
 xarray_list = []
 for season in ['DJF','MAM','JJA','SON']:
@@ -55,41 +65,45 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 
+plot_thr = 0
+
 cmap = plt.get_cmap('viridis')
-boundaries = np.arange(.25,1.125,.125)  # Boundaries for color changes
+boundaries = np.arange(plot_thr,1.125,.125)  # Boundaries for color changes
 norm = BoundaryNorm(boundaries, cmap.N)
 
-# Load elevation data
-elev = pd.read_feather('../output/'+'conus'+'_elev')
-elev = elev.groupby(['latitude', 'longitude']).max().elevation.to_xarray()
 
 # Load shapefiles once
 shapefiles = {}
 for shape in [10, 11, 13, 14]:
     shapefile_path = f"../data/huc2/WBD_{shape}_HU2_Shape/WBDHU2.shp"
     shapefiles[shape] = gpd.read_file(shapefile_path)
-
+gdf2 = gpd.read_file("../data/Colorado_Mtn_Ranges/ranges.shp")
 # Create subplots
 fig, axes = plt.subplots(2, 4, figsize=(13.5,5), sharex=True, sharey=True)
 
 for i, ax in enumerate(axes.flat):
     data = xarray_list[i]
-    data = data.where(data > 0.25)
+    data = data.where(data > plot_thr)
 
-    # Plot elevation data
-    ax.contourf(elev.longitude, elev.latitude, elev, cmap='terrain', alpha=0.7)
-    
+    ax.text(-104.4, 39.6, "10", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-104.7, 37.1, "11", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-106, 37.4, "13", 
+            fontsize=14, color='white', ha='center')
+    ax.text(-108.6, 40.5, "14", 
+            fontsize=14, color='white', ha='center')
     # Plot precipitation data
     im = ax.pcolormesh(data.longitude, data.latitude, data.values, cmap=cmap, norm=norm, rasterized=True)
-
+    gdf2.plot(ax=ax, edgecolor='white', facecolor='none',linewidth=.75,linestyle='--')
     # Plot shapefiles
     for gdf in shapefiles.values():
         gdf.plot(ax=ax, edgecolor='red', facecolor='none')
 
     # Set aspect ratio and limits
     ax.set_aspect('equal')
-    ax.set_xlim(elev.longitude.min(), elev.longitude.max())
-    ax.set_ylim(elev.latitude.min(), elev.latitude.max())
+    ax.set_xlim(data.longitude.min(), data.longitude.max())
+    ax.set_ylim(data.latitude.min(), data.latitude.max())
 
     #snotel = pd.read_csv('../data/snotel_loc.csv')
     #ax.scatter(snotel.Longitude,snotel.Latitude,c='white')
@@ -113,3 +127,4 @@ plt.tight_layout()
 plt.show()
 
 fig.savefig("../figures_output/seasonnormmap.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+# %%

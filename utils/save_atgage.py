@@ -8,9 +8,9 @@ import xarray as xr
 import glob
 import numpy as np
 import xesmf as xe
-name = 'mrms'
-#name = 'conus'
-#name = 'aorc'
+#name = 'mrms'
+#name = 'conus_new'
+name = 'aorc'
 #%%
 # open all gage data
 coag = pd.read_feather('../output/coag_1')
@@ -18,7 +18,7 @@ coag = pd.read_feather('../output/coag_1')
 coag_coords = coag.groupby(['latitude','longitude']).max().reset_index()[['latitude','longitude']]
 
 #%%
-#files = glob.glob('../data/conus404/*JJA*.nc')[-7::]
+#files = glob.glob('../data/conus404/PREC_ACC_NC_season/*JJA*.nc')[-7::]
 #files = glob.glob('../data/mrms/*.nc')
 files = glob.glob('../data/aorc/*.nc')
 ann_max = []
@@ -33,8 +33,9 @@ for file in files:
     ########################## UNCOMMENT WHAT DATASET TO USE
     precip = precip.rename({'APCP_surface': 'accum_1hr'})
     #precip = precip.rename({'unknown': 'accum_1hr'})
-    #precip = precip.rename({'ACRAINLSM': 'accum_1hr'})
+    #precip = precip.rename({'PREC_ACC_NC': 'accum_1hr'})
     ##############################################################################
+    precip = precip.where(precip['accum_1hr'] >= 0, 0)
     for coord in coag_coords.index:
         data = {'time':precip.time.values,
 'latitude':coag_coords.latitude[coord],

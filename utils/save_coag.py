@@ -57,4 +57,3 @@ coag = coag[coag.accum>0.01]
 #%%
 coag.to_feather('../output/coag_1')
 coag_24.to_feather('../output/coag_24')
-# %%

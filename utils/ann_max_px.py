@@ -10,15 +10,15 @@
 #%%
 import pandas as pd
 import xarray as xr
-import xesmf as xe
+#import xesmf as xe
 import glob
 ########################## UNCOMMENT WHAT DATASET TO USE
-name = 'aorc'
+#name = 'aorc'
 #name = 'mrms'
 #name = 'conus'
-
+name = 'conus_new'
 #%%
-df_conus = xr.open_dataset('../data/conus404/wrf2d_d01_2016_JJA.nc')
+'''df_conus = xr.open_dataset('../data/conus404/wrf2d_d01_2016_JJA.nc')
 df_conus = df_conus.sel(longitude = slice(-109,-104.005),latitude = slice(37,41))
 
 df_aorc = xr.open_dataset('../data/aorc/larger_aorc_APCP_surface_2016.nc')
@@ -28,27 +28,30 @@ df_mrms = xr.open_dataset('../data/mrms/2022_mrms_1hr_radaronly_JJA.nc')
 df_mrms = df_mrms.sel(longitude = slice(-109,-104.005),latitude = slice(41,37))
 
 regridder_aorc = xe.Regridder(df_aorc, df_conus, "conservative")
-regridder_mrms = xe.Regridder(df_mrms, df_conus, "conservative")
+regridder_mrms = xe.Regridder(df_mrms, df_conus, "conservative")'''
+
 #%%
 #files = glob.glob('../data/conus404/*.nc')
-files = glob.glob('../data/mrms/*.nc')
+#files = glob.glob('../data/mrms/*.nc')
 #files = glob.glob('../data/aorc/*.nc')
+files = glob.glob('../data/conus404/PREC_ACC_NC_season/*.nc')
 ann_max = []
 
 for file in files:
 
     ##############################################################################
     precip = xr.open_dataset(file)
-    #precip = precip.sel(longitude = slice(-109,-104.005),latitude = slice(37,41))
+    precip = precip.sel(longitude = slice(-109,-104.005),latitude = slice(37,41))
     #precip = regridder_aorc(precip)
-    precip = regridder_mrms(precip)
+    #precip = regridder_mrms(precip)
 
     ########################## UNCOMMENT WHAT DATASET TO USE
     #precip = precip.rename({'APCP_surface': 'accum_1hr'})
-    precip = precip.rename({'unknown': 'accum_1hr'})
+    #precip = precip.rename({'unknown': 'accum_1hr'})
     #precip = precip.rename({'ACRAINLSM': 'accum_1hr'})
+    precip = precip.rename({'PREC_ACC_NC': 'accum_1hr'})
     ##############################################################################
-    #season = file[-6:-3] # conus only
+    season = file[-6:-3] # conus only
 
     precip = precip.where(precip>=0)
     
@@ -59,13 +62,13 @@ for file in files:
     precip_max['accum_24hr']=precip_24_max.accum_1hr
 
     precip_max['year'] = precip.time.dt.year.max().values
-    #precip_max['season'] = season
+    precip_max['season'] = season
     print(file)
     ann_max.append(precip_max.to_dataframe().reset_index())
 #%%
 ann_max = pd.concat(ann_max)
 
-ann_max.to_feather('../output/'+name+'_ann_max')
+ann_max.reset_index().to_feather('../output/'+name+'_ann_max')
 
 
 # %%
