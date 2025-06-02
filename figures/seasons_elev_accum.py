@@ -220,4 +220,4 @@ fig.supylabel("Precipitation Accumulation (mm)", fontsize=14)
 
 plt.tight_layout()
 plt.show()
-fig.savefig("../figures_output/seasonelevvsmag.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+fig.savefig("../figures_output/f08.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')

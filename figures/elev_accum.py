@@ -241,5 +241,5 @@ plt.tight_layout()
 plt.show()
 
 
-fig.savefig("../figures_output/2016elevvsmap.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+fig.savefig("../figures_output/f07.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 # %%

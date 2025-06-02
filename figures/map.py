@@ -114,6 +114,6 @@ plt.xlabel("")
 plt.ylabel("")
 plt.legend(loc='upper left')
 plt.show()
-fig.savefig("../figures_output/map.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+fig.savefig("../figures_output/f01.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 
 # %%

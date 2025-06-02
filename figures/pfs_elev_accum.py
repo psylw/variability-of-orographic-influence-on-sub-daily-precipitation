@@ -209,7 +209,7 @@ fig.supylabel("Precipitation Accumulation (mm)", fontsize=14)
 
 plt.tight_layout()
 plt.show()
-fig.savefig("../figures_output/pfselevvsmag.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+fig.savefig("../figures_output/f09.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 # %%
 fig, ax = plt.subplots(figsize=(6, 4))
 slope_diff = pd.DataFrame(reg_values, columns=['abs diff', 'dataset', 'region'])
