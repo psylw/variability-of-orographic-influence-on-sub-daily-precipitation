@@ -68,7 +68,7 @@ import xarray as xr
 plot_thr = 0
 
 cmap = plt.get_cmap('viridis')
-boundaries = np.arange(plot_thr,1.125,.125)  # Boundaries for color changes
+boundaries = np.arange(plot_thr,1.25,.25)  # Boundaries for color changes
 norm = BoundaryNorm(boundaries, cmap.N)
 
 
@@ -83,7 +83,7 @@ fig, axes = plt.subplots(2, 4, figsize=(13.5,5), sharex=True, sharey=True)
 
 for i, ax in enumerate(axes.flat):
     data = xarray_list[i]
-    data = data.where(data > plot_thr)
+    #data = data.where(data > plot_thr)
 
     ax.text(-104.4, 39.6, "10", 
             fontsize=14, color='white', ha='center')
@@ -95,7 +95,7 @@ for i, ax in enumerate(axes.flat):
             fontsize=14, color='white', ha='center')
     # Plot precipitation data
     im = ax.pcolormesh(data.longitude, data.latitude, data.values, cmap=cmap, norm=norm, rasterized=True)
-    gdf2.plot(ax=ax, edgecolor='white', facecolor='none',linewidth=.75,linestyle='--')
+    gdf2.plot(ax=ax, facecolor='none',linewidth=.75,linestyle='--', edgecolor='white')
     # Plot shapefiles
     for gdf in shapefiles.values():
         gdf.plot(ax=ax, edgecolor='red', facecolor='none')
@@ -126,5 +126,5 @@ plt.tight_layout()
 #plt.subplots_adjust(top=0.9)  # Adjust top margin to fit labels
 plt.show()
 
-fig.savefig("../figures_output/seasonnormmap.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+fig.savefig("../figures_output/f04.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 # %%

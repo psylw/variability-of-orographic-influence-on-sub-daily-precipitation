@@ -62,7 +62,7 @@ from matplotlib.lines import Line2D
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 import numpy as np
-
+from sklearn.feature_selection import f_regression
 # Assume df has columns: huc2, elevation_bin, season, '1hr accum', '24hr accum', 'elevation', etc.
 # and dataset_colors is a dict mapping e.g. 'DJF' -> some color, etc.
 unique_hucs = [10, 11, 13, 14]
@@ -99,6 +99,7 @@ for i, h in enumerate(unique_hucs):
             legend=False,
             ax=ax
         )
+        label_colours = []
 
         # 2) Manually add regression lines with labels, again no local legend
         for dataset in subset['dataset'].unique():
@@ -110,7 +111,10 @@ for i, h in enumerate(unique_hucs):
             model = LinearRegression().fit(X, y)
             slope = model.coef_[0]
             r2 = r2_score(y, model.predict(X))
-
+            _, p = f_regression(X,y)
+            lbl_colour = 'red' if p > 0.05 else 'black'
+            label_colours.append(lbl_colour)
+            
             # If 1hr, store slope2 for later comparison
             if window == 1:
                 slope2 = LinearRegression().fit(X, ds_plot['norm_1']).coef_[0]
@@ -126,7 +130,7 @@ for i, h in enumerate(unique_hucs):
                     slope2_label = rf"$\mathbf{{{slope2_24:.2f}}}$"
                 label = rf"{dataset}, R²={r2:.2f}, slope={slope:.2f}, ({slope2_label})"
                 
-
+            reg_values.append([slope,window,dataset,h])
             # Actually plot the regression line with a label
             x_data = ds_plot['elevation'].values
             y_pred = model.predict(X)  # X in km
@@ -153,9 +157,11 @@ for i, h in enumerate(unique_hucs):
         # 5) Append the heading first, then this subplot’s lines
         #    (We do NOT deduplicate because we want each subplot’s lines under its heading,
         #     even if the same label appears in multiple subplots.)
-        legend_entries.append((heading_artist, subplot_title))
-        for handle, label in zip(h_sub, l_sub):
-            legend_entries.append((handle, label))
+        lbl_colour = 'black'
+        legend_entries.append((heading_artist, subplot_title, lbl_colour))
+        for handle, label, c in zip(h_sub, l_sub, label_colours):
+            
+            legend_entries.append((handle, label, c))
 
         # Cosmetic subplot settings
 
@@ -182,7 +188,7 @@ for i, h in enumerate(unique_hucs):
 # plus all the lines from each subplot.
 
 # Separate them out for fig.legend
-final_handles, final_labels = zip(*legend_entries)
+final_handles, final_labels, colors = zip(*legend_entries)
 
 # Shift the subplots so the legend on the right has space
 plt.subplots_adjust(right=0.65)
@@ -193,7 +199,8 @@ fig.legend(
     final_labels,
     loc='center left',
     bbox_to_anchor=(.95, 0.5),  # shift further right if needed
-    frameon=False
+    frameon=False,
+    labelcolor = colors
 )
 
 fig.supxlabel("Elevation (m)", fontsize=14, x=.5)
@@ -204,3 +211,14 @@ plt.tight_layout()
 plt.show()
 fig.savefig("../figures_output/pfselevvsmag.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 # %%
+fig, ax = plt.subplots(figsize=(6, 4))
+slope_diff = pd.DataFrame(reg_values, columns=['abs diff', 'dataset', 'region'])
+
+
+sns.barplot(data = slope_diff, y = 'abs diff', hue = 'dataset', x = 'region', alpha = .5,ax=ax)
+
+fig.savefig("../figures_output/slopediff.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+
+#%%
+
+slope_diff = pd.DataFrame(reg_values, columns=['slope', 'dur','dataset', 'region'])

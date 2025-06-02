@@ -17,6 +17,7 @@ df = pd.concat([df_atlas,df_reps,df_conus])
 df_elev = pd.read_feather('../output/conus_elev')
 
 df = pd.merge(df,df_elev,on=['latitude','longitude'])
+
 # %%
 window = 'accum_1hr'
 df1 = df.copy()
@@ -60,7 +61,7 @@ import numpy as np
 import xarray as xr
 
 cmap = plt.get_cmap('viridis')
-boundaries = np.arange(0,1.125,.125)  # Boundaries for color changes
+boundaries = np.arange(0,1.25,.25)  # Boundaries for color changes
 norm = BoundaryNorm(boundaries, cmap.N)
 
 
@@ -76,7 +77,7 @@ fig, axes = plt.subplots(2, 3, figsize=(15*.7, 8*.6), sharex=True, sharey=True)
 
 for i, ax in enumerate(axes.flat):
     data = xarray_list[i]
-    data = data.where(data > 0)
+    #data = data.where(data > 0)
 
     ax.text(-104.4, 39.6, "10", 
             fontsize=14, color='white', ha='center')
@@ -92,6 +93,8 @@ for i, ax in enumerate(axes.flat):
     
     # Plot precipitation data
     im = ax.pcolormesh(data.longitude, data.latitude, data.values, cmap=cmap, norm=norm, rasterized=True)
+
+
     gdf2.plot(ax=ax, edgecolor='white', facecolor='none',linewidth=.75,linestyle='--')
     
     # Plot shapefiles
@@ -125,6 +128,6 @@ cbar.set_label('Normalized Accumulation', fontsize=12)
 plt.tight_layout()
 #plt.subplots_adjust(top=0.9)  # Adjust top margin to fit labels
 plt.show()
-fig.savefig("../figures_output/pfsnormaccummap.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
+fig.savefig("../figures_output/f05.pdf",bbox_inches='tight',dpi=600,transparent=False,facecolor='white')
 
 # %%

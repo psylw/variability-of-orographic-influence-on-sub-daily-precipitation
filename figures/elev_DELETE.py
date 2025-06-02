@@ -3,7 +3,7 @@ import xarray as xr
 import xesmf as xe
 import rioxarray
 import matplotlib.pyplot as plt
-
+#%%
 df_conus = xr.open_dataset('../data/conus404/wrf2d_d01_2016_JJA.nc')
 df_conus = df_conus.sel(longitude = slice(-109,-104.005),latitude = slice(37,41))
 

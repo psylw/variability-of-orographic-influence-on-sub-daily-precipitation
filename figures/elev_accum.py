@@ -86,12 +86,13 @@ from matplotlib.lines import Line2D
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 import numpy as np
-
+from sklearn.feature_selection import f_regression
 # Assume df has columns: huc2, elevation_bin, season, '1hr accum', '24hr accum', 'elevation', etc.
 # and dataset_colors is a dict mapping e.g. 'DJF' -> some color, etc.
 unique_hucs = [10, 11, 13, 14]
 slope2_1hr_dict = {}
 reg_values = []
+
 
 # Create a 4×2 grid of subplots
 fig, axes = plt.subplots(nrows=4, ncols=2, figsize=(12*.8, 10*.8))
@@ -101,6 +102,7 @@ fig, axes = plt.subplots(nrows=4, ncols=2, figsize=(12*.8, 10*.8))
 legend_entries = []
 
 for i, h in enumerate(unique_hucs):
+    
     for j, window in enumerate([1, 24]):
         ax = axes[i, j]
         
@@ -123,7 +125,7 @@ for i, h in enumerate(unique_hucs):
             legend=False,
             ax=ax
         )
-
+        label_colours = []
         # 2) Manually add regression lines with labels, again no local legend
         for dataset in subset['dataset'].unique():
             ds_plot = subset[subset['dataset'] == dataset]
@@ -134,6 +136,10 @@ for i, h in enumerate(unique_hucs):
             model = LinearRegression().fit(X, y)
             slope = model.coef_[0]
             r2 = r2_score(y, model.predict(X))
+            _, p = f_regression(X,y)
+            reg_values.append([p,dataset,window,h])
+            lbl_colour = 'red' if p > 0.05 else 'black'
+            label_colours.append(lbl_colour)
 
             # If 1hr, store slope2 for later comparison
             if window == 1:
@@ -150,6 +156,7 @@ for i, h in enumerate(unique_hucs):
                     slope2_label = rf"$\mathbf{{{slope2_24:.2f}}}$"
                 label = rf"{dataset}, R²={r2:.2f}, slope={slope:.2f}, ({slope2_label})"
                 
+
 
             # Actually plot the regression line with a label
             x_data = ds_plot['elevation'].values
@@ -177,9 +184,12 @@ for i, h in enumerate(unique_hucs):
         # 5) Append the heading first, then this subplot’s lines
         #    (We do NOT deduplicate because we want each subplot’s lines under its heading,
         #     even if the same label appears in multiple subplots.)
-        legend_entries.append((heading_artist, subplot_title))
-        for handle, label in zip(h_sub, l_sub):
-            legend_entries.append((handle, label))
+        lbl_colour = 'black'
+        legend_entries.append((heading_artist, subplot_title, lbl_colour))
+
+        for handle, label, c in zip(h_sub, l_sub, label_colours):
+            
+            legend_entries.append((handle, label, c))
 
         # Cosmetic subplot settings
 
@@ -206,19 +216,22 @@ for i, h in enumerate(unique_hucs):
 # plus all the lines from each subplot.
 
 # Separate them out for fig.legend
-final_handles, final_labels = zip(*legend_entries)
+final_handles, final_labels, colors = zip(*legend_entries)
 
 # Shift the subplots so the legend on the right has space
 plt.subplots_adjust(right=0.65)
 
 # Make one combined legend on the right
-fig.legend(
+leg = fig.legend(
     final_handles,
     final_labels,
     loc='center left',
     bbox_to_anchor=(.95, 0.5),  # shift further right if needed
-    frameon=False
+    frameon=False,
+    labelcolor = colors
 )
+
+
 
 fig.supxlabel("Elevation (m)", fontsize=14, x=.5)
 fig.supylabel("Precipitation Accumulation (mm)", fontsize=14)
